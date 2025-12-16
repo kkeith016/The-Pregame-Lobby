@@ -1,8 +1,8 @@
 package org.yearup.data.mysql;
 
 import org.springframework.stereotype.Component;
-import org.yearup.models.Product;
 import org.yearup.data.ProductDao;
+import org.yearup.models.Product;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
@@ -19,14 +19,17 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
     }
 
     @Override
-    public List<Product> search(Integer categoryId, BigDecimal minPrice, BigDecimal maxPrice, String subCategory)
+    public List<Product> search(Integer categoryId,
+                                BigDecimal minPrice,
+                                BigDecimal maxPrice,
+                                String subCategory)
     {
         List<Product> products = new ArrayList<>();
 
         StringBuilder sql = new StringBuilder("""
             SELECT *
             FROM products
-            WHERE 1=1
+            WHERE 1 = 1
         """);
 
         List<Object> params = new ArrayList<>();
@@ -49,11 +52,13 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
             params.add(maxPrice);
         }
 
+
         if (subCategory != null && !subCategory.isBlank())
         {
-            sql.append(" AND subcategory LIKE ?");
+            sql.append(" AND sub_category LIKE ?");
             params.add("%" + subCategory + "%");
         }
+
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql.toString()))
@@ -109,6 +114,7 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
     public Product getById(int productId)
     {
         String sql = "SELECT * FROM products WHERE product_id = ?";
+
         try (Connection connection = getConnection())
         {
             PreparedStatement statement = connection.prepareStatement(sql);
@@ -125,6 +131,7 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
         {
             throw new RuntimeException(e);
         }
+
         return null;
     }
 
@@ -132,7 +139,8 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
     public Product create(Product product)
     {
         String sql = """
-            INSERT INTO products(name, price, category_id, description, subcategory, image_url, stock, featured)
+            INSERT INTO products
+            (name, price, category_id, description, subcategory, image_url, stock, featured)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
@@ -173,7 +181,14 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
     {
         String sql = """
             UPDATE products
-            SET name = ?, price = ?, category_id = ?, description = ?, subcategory = ?, image_url = ?, stock = ?, featured = ?
+            SET name = ?,
+                price = ?,
+                category_id = ?,
+                description = ?,
+                subcategory = ?,
+                image_url = ?,
+                stock = ?,
+                featured = ?
             WHERE product_id = ?
         """;
 
@@ -227,6 +242,16 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
         boolean isFeatured = row.getBoolean("featured");
         String imageUrl = row.getString("image_url");
 
-        return new Product(productId, name, price, categoryId, description, subCategory, stock, isFeatured, imageUrl);
+        return new Product(
+                productId,
+                name,
+                price,
+                categoryId,
+                description,
+                subCategory,
+                stock,
+                isFeatured,
+                imageUrl
+        );
     }
 }
