@@ -52,13 +52,12 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
             params.add(maxPrice);
         }
 
-
+        // FIX FOR BUG #1: Changed from "sub_category" to "subcategory"
         if (subCategory != null && !subCategory.isBlank())
         {
-            sql.append(" AND sub_category LIKE ?");
+            sql.append(" AND subcategory LIKE ?");
             params.add("%" + subCategory + "%");
         }
-
 
         try (Connection connection = getConnection();
              PreparedStatement statement = connection.prepareStatement(sql.toString()))
@@ -205,7 +204,13 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
             statement.setBoolean(8, product.isFeatured());
             statement.setInt(9, productId);
 
-            statement.executeUpdate();
+            int rowsAffected = statement.executeUpdate();
+
+            // FIX FOR BUG #2: Add validation to ensure update succeeded
+            if (rowsAffected == 0)
+            {
+                throw new RuntimeException("Product with ID " + productId + " not found");
+            }
         }
         catch (SQLException e)
         {
