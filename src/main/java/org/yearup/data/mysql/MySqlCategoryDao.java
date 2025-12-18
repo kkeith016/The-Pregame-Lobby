@@ -37,6 +37,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         }
         catch(SQLException e)
         {
+            e.printStackTrace();
             throw new RuntimeException("Error retrieving categories", e);
         }
 
@@ -61,6 +62,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         }
         catch(SQLException e)
         {
+            e.printStackTrace();
             throw new RuntimeException("Error retrieving category by ID", e);
         }
 
@@ -92,6 +94,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         }
         catch (SQLException e)
         {
+            e.printStackTrace();
             throw new RuntimeException("Error creating category", e);
         }
 
@@ -119,6 +122,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         }
         catch(SQLException e)
         {
+            e.printStackTrace();
             throw new RuntimeException("Error updating category", e);
         }
     }
@@ -136,6 +140,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         }
         catch(SQLException e)
         {
+            e.printStackTrace();
             throw new RuntimeException("Error deleting category", e);
         }
     }
