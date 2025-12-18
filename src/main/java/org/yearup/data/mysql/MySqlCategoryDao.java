@@ -111,7 +111,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
 
     // UPDATE CATEGORY
     @Override
-    public void update(int categoryId, Category category)
+    public Category update(int categoryId, Category category)
     {
         String sql = """
             UPDATE categories
@@ -131,6 +131,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         {
             throw new RuntimeException("Error updating category " + categoryId, e);
         }
+        return category;
     }
 
     // DELETE CATEGORY
