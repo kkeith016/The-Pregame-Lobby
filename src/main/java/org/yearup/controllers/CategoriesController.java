@@ -13,24 +13,23 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/categories")
-@CrossOrigin(origins = "https://localhost:8080")
+@CrossOrigin(origins = "http://localhost:8080")
 public class CategoriesController
 {
-    private CategoryDao categoryDao;
-    private ProductDao productDao;
-
+    private final CategoryDao categoryDao;
+    private final ProductDao productDao;
 
     @Autowired
-    public CategoriesController(CategoryDao categoryDao, ProductDao productDao) {
+    public CategoriesController(CategoryDao categoryDao, ProductDao productDao)
+    {
         this.categoryDao = categoryDao;
         this.productDao = productDao;
     }
 
-
-    @GetMapping("")
+    // GET ALL CATEGORIES
+    @GetMapping
     @PreAuthorize("permitAll()")
     public List<Category> getAll()
     {
@@ -38,59 +37,83 @@ public class CategoriesController
         {
             return categoryDao.getAllCategories();
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Oops... our bad.",
+                    ex
+            );
         }
     }
 
+    // GET CATEGORY BY ID
     @GetMapping("/{id}")
     @PreAuthorize("permitAll()")
     public ResponseEntity<Category> getById(@PathVariable int id)
     {
         try
         {
-            var category = categoryDao.getById(id);
+            Category category = categoryDao.getById(id);
 
-            if (category == null) {
+            if (category == null)
+            {
                 return ResponseEntity.notFound().build();
             }
 
             return ResponseEntity.ok(category);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Oops... our bad.",
+                    ex
+            );
         }
     }
 
+    // GET PRODUCTS BY CATEGORY ID
     // https://localhost:8080/categories/1/products
-    @GetMapping("{categoryId}/products")
+    @GetMapping("/{categoryId}/products")
     @PreAuthorize("permitAll()")
-    public List<Product> getProductsById(@PathVariable int categoryId)
+    public List<Product> getProductsByCategoryId(@PathVariable int categoryId)
     {
         try
         {
-            var category = categoryDao.getById(categoryId);
+            Category category = categoryDao.getById(categoryId);
 
-            if(category == null)
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            if (category == null)
+            {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
+            }
 
-            var products = productDao.listByCategoryId(categoryId);
-
-            if(products == null)
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-
-
-            return products;
+            return productDao.listByCategoryId(categoryId);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Oops... our bad.",
+                    ex
+            );
         }
     }
 
-    @PostMapping()
+    // CREATE CATEGORY
+    @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Category> addCategory(@RequestBody Category category)
     {
@@ -99,52 +122,80 @@ public class CategoriesController
             Category created = categoryDao.create(category);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
         {
-
-            ex.printStackTrace();
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Oops... our bad.",
+                    ex
+            );
         }
     }
 
-    @PutMapping("{id}")
+    // UPDATE CATEGORY
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Category> updateCategory(@PathVariable int id, @RequestBody Category category)
+    public ResponseEntity<Category> updateCategory(
+            @PathVariable int id,
+            @RequestBody Category category)
     {
         try
         {
             Category updated = categoryDao.update(id, category);
 
-            if (updated == null) {
+            if (updated == null)
+            {
                 return ResponseEntity.notFound().build();
             }
 
             return ResponseEntity.ok(updated);
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
-        }    }
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Oops... our bad.",
+                    ex
+            );
+        }
+    }
 
-
-    @DeleteMapping("{id}")
+    // DELETE CATEGORY
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteCategory(@PathVariable int id)
     {
         try
         {
-            var category = categoryDao.getById(id);
+            Category category = categoryDao.getById(id);
 
-            if(category == null)
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            if (category == null)
+            {
+                return ResponseEntity.notFound().build();
+            }
 
             categoryDao.delete(id);
-
             return ResponseEntity.noContent().build();
         }
-        catch(Exception ex)
+        catch (ResponseStatusException ex)
         {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Oops... our bad.");
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Oops... our bad.",
+                    ex
+            );
         }
     }
 }

@@ -73,7 +73,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
             throw new RuntimeException("Error retrieving category " + categoryId, e);
         }
 
-        return null; // controller will return 200 with empty body (or you can throw)
+        return null;
     }
 
     // CREATE CATEGORY
@@ -109,7 +109,7 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
         return null;
     }
 
-    // UPDATE CATEGORY
+    // UPDATE CATEGORY (FIXED)
     @Override
     public Category update(int categoryId, Category category)
     {
@@ -125,13 +125,20 @@ public class MySqlCategoryDao extends MySqlDaoBase implements CategoryDao
             ps.setString(1, category.getName());
             ps.setString(2, category.getDescription());
             ps.setInt(3, categoryId);
-            ps.executeUpdate();
+
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected == 0)
+            {
+                return null;
+            }
+
+            return getById(categoryId);
         }
         catch (SQLException e)
         {
             throw new RuntimeException("Error updating category " + categoryId, e);
         }
-        return category;
     }
 
     // DELETE CATEGORY

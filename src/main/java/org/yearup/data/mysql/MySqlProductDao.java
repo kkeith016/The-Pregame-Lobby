@@ -18,11 +18,13 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
         super(dataSource);
     }
 
+    // SEARCH PRODUCTS
     @Override
-    public List<Product> search(Integer categoryId,
-                                BigDecimal minPrice,
-                                BigDecimal maxPrice,
-                                String subCategory)
+    public List<Product> search(
+            Integer categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            String subCategory)
     {
         List<Product> products = new ArrayList<>();
 
@@ -52,36 +54,36 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
             params.add(maxPrice);
         }
 
-        // FIX FOR BUG #1: Changed from "sub_category" to "subcategory"
         if (subCategory != null && !subCategory.isBlank())
         {
             sql.append(" AND subcategory LIKE ?");
             params.add("%" + subCategory + "%");
         }
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString()))
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString()))
         {
             for (int i = 0; i < params.size(); i++)
             {
-                statement.setObject(i + 1, params.get(i));
+                ps.setObject(i + 1, params.get(i));
             }
 
-            ResultSet row = statement.executeQuery();
+            ResultSet rs = ps.executeQuery();
 
-            while (row.next())
+            while (rs.next())
             {
-                products.add(mapRow(row));
+                products.add(mapRow(rs));
             }
         }
         catch (SQLException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error searching products", e);
         }
 
         return products;
     }
 
+    // LIST PRODUCTS BY CATEGORY
     @Override
     public List<Product> listByCategoryId(int categoryId)
     {
@@ -89,51 +91,51 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
 
         String sql = "SELECT * FROM products WHERE category_id = ?";
 
-        try (Connection connection = getConnection())
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql))
         {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setInt(1, categoryId);
+            ps.setInt(1, categoryId);
+            ResultSet rs = ps.executeQuery();
 
-            ResultSet row = statement.executeQuery();
-
-            while (row.next())
+            while (rs.next())
             {
-                products.add(mapRow(row));
+                products.add(mapRow(rs));
             }
         }
         catch (SQLException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error retrieving products by category", e);
         }
 
         return products;
     }
 
+    // GET PRODUCT BY ID
     @Override
     public Product getById(int productId)
     {
         String sql = "SELECT * FROM products WHERE product_id = ?";
 
-        try (Connection connection = getConnection())
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql))
         {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setInt(1, productId);
+            ps.setInt(1, productId);
+            ResultSet rs = ps.executeQuery();
 
-            ResultSet row = statement.executeQuery();
-
-            if (row.next())
+            if (rs.next())
             {
-                return mapRow(row);
+                return mapRow(rs);
             }
         }
         catch (SQLException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error retrieving product " + productId, e);
         }
 
         return null;
     }
 
+    // CREATE PRODUCT
     @Override
     public Product create(Product product)
     {
@@ -143,40 +145,37 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
-        try (Connection connection = getConnection())
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS))
         {
-            PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, product.getName());
-            statement.setBigDecimal(2, product.getPrice());
-            statement.setInt(3, product.getCategoryId());
-            statement.setString(4, product.getDescription());
-            statement.setString(5, product.getSubCategory());
-            statement.setString(6, product.getImageUrl());
-            statement.setInt(7, product.getStock());
-            statement.setBoolean(8, product.isFeatured());
+            ps.setString(1, product.getName());
+            ps.setBigDecimal(2, product.getPrice());
+            ps.setInt(3, product.getCategoryId());
+            ps.setString(4, product.getDescription());
+            ps.setString(5, product.getSubCategory());
+            ps.setString(6, product.getImageUrl());
+            ps.setInt(7, product.getStock());
+            ps.setBoolean(8, product.isFeatured());
 
-            int rowsAffected = statement.executeUpdate();
+            ps.executeUpdate();
 
-            if (rowsAffected > 0)
+            ResultSet keys = ps.getGeneratedKeys();
+            if (keys.next())
             {
-                ResultSet generatedKeys = statement.getGeneratedKeys();
-                if (generatedKeys.next())
-                {
-                    int productId = generatedKeys.getInt(1);
-                    return getById(productId);
-                }
+                return getById(keys.getInt(1));
             }
         }
         catch (SQLException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error creating product", e);
         }
 
         return null;
     }
 
+    // UPDATE PRODUCT (FIXED)
     @Override
-    public void update(int productId, Product product)
+    public Product update(int productId, Product product)
     {
         String sql = """
             UPDATE products
@@ -191,72 +190,65 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
             WHERE product_id = ?
         """;
 
-        try (Connection connection = getConnection())
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql))
         {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setString(1, product.getName());
-            statement.setBigDecimal(2, product.getPrice());
-            statement.setInt(3, product.getCategoryId());
-            statement.setString(4, product.getDescription());
-            statement.setString(5, product.getSubCategory());
-            statement.setString(6, product.getImageUrl());
-            statement.setInt(7, product.getStock());
-            statement.setBoolean(8, product.isFeatured());
-            statement.setInt(9, productId);
+            ps.setString(1, product.getName());
+            ps.setBigDecimal(2, product.getPrice());
+            ps.setInt(3, product.getCategoryId());
+            ps.setString(4, product.getDescription());
+            ps.setString(5, product.getSubCategory());
+            ps.setString(6, product.getImageUrl());
+            ps.setInt(7, product.getStock());
+            ps.setBoolean(8, product.isFeatured());
+            ps.setInt(9, productId);
 
-            int rowsAffected = statement.executeUpdate();
+            int rows = ps.executeUpdate();
 
-            // FIX FOR BUG #2: Add validation to ensure update succeeded
-            if (rowsAffected == 0)
+            if (rows == 0)
             {
-                throw new RuntimeException("Product with ID " + productId + " not found");
+                return null;
             }
+
+            return getById(productId);
         }
         catch (SQLException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error updating product " + productId, e);
         }
     }
 
+    // DELETE PRODUCT
     @Override
     public void delete(int productId)
     {
         String sql = "DELETE FROM products WHERE product_id = ?";
 
-        try (Connection connection = getConnection())
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql))
         {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setInt(1, productId);
-            statement.executeUpdate();
+            ps.setInt(1, productId);
+            ps.executeUpdate();
         }
         catch (SQLException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error deleting product " + productId, e);
         }
     }
 
+    // MAP ROW → PRODUCT
     protected static Product mapRow(ResultSet row) throws SQLException
     {
-        int productId = row.getInt("product_id");
-        String name = row.getString("name");
-        BigDecimal price = row.getBigDecimal("price");
-        int categoryId = row.getInt("category_id");
-        String description = row.getString("description");
-        String subCategory = row.getString("subcategory");
-        int stock = row.getInt("stock");
-        boolean isFeatured = row.getBoolean("featured");
-        String imageUrl = row.getString("image_url");
-
         return new Product(
-                productId,
-                name,
-                price,
-                categoryId,
-                description,
-                subCategory,
-                stock,
-                isFeatured,
-                imageUrl
+                row.getInt("product_id"),
+                row.getString("name"),
+                row.getBigDecimal("price"),
+                row.getInt("category_id"),
+                row.getString("description"),
+                row.getString("subcategory"),
+                row.getInt("stock"),
+                row.getBoolean("featured"),
+                row.getString("image_url")
         );
     }
 }
